@@ -1,0 +1,25 @@
+[package]
+name = "hsh"
+version = "0.1.0"
+edition = "2024"
+description = "hardened shell — age-encrypted env vars injected per-command"
+license = "MIT"
+
+[dependencies]
+age = "0.11"
+zeroize = { version = "1", features = ["serde"] }
+libc = "0.2"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+rpassword = "7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Forget-on-lock listens to systemd-logind over D-Bus, which only exists on
+# Linux. macOS falls back to the idle-TTL watcher and never compiles zbus.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "5"
+
+[dev-dependencies]
+age = "0.11"
