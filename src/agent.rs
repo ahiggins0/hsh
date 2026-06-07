@@ -379,9 +379,11 @@ mod tests {
         let mut st = AgentState::new();
         st.unlock_with(
             LockedSecret::new(b"x".to_vec()),
-            Some(Duration::from_millis(1)),
+            Some(Duration::from_secs(10)),
         );
-        std::thread::sleep(Duration::from_millis(20));
+        // Backdate the clock past the TTL rather than sleeping, so the test is
+        // deterministic regardless of scheduler jitter.
+        st.unlocked_at = Some(Instant::now() - Duration::from_secs(20));
         st.expire_if_idle();
         assert!(st.secrets.is_none());
     }
@@ -391,11 +393,13 @@ mod tests {
         let mut st = AgentState::new();
         st.unlock_with(
             LockedSecret::new(b"x".to_vec()),
-            Some(Duration::from_millis(50)),
+            Some(Duration::from_secs(10)),
         );
-        std::thread::sleep(Duration::from_millis(30));
+        // The idle window has fully elapsed: without a touch this would expire.
+        st.unlocked_at = Some(Instant::now() - Duration::from_secs(20));
+        // A fetch counts as activity and resets the clock to now...
         st.touch();
-        std::thread::sleep(Duration::from_millis(30));
+        // ...so the cache is no longer idle. No sleeps: deterministic.
         st.expire_if_idle();
         assert!(
             st.secrets.is_some(),
